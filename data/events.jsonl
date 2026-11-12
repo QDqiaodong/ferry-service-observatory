@@ -1,0 +1,6 @@
+{"event_id":"e4","trip_id":"F2","kind":"arrived","occurred_at":"2026-01-01T09:15:00Z"}
+{"event_id":"e1","trip_id":"F1","kind":"departed","occurred_at":"2026-01-01T08:02:00Z"}
+{"event_id":"e2","trip_id":"F1","kind":"arrived","occurred_at":"2026-01-01T08:40:00Z"}
+{"event_id":"e3","trip_id":"F2","kind":"departed","occurred_at":"2026-01-01T08:39:00Z"}
+{"event_id":"e5","trip_id":"F3","kind":"cancelled","occurred_at":"2026-01-01T08:45:00Z"}
+{"event_id":"e1","trip_id":"F1","kind":"departed","occurred_at":"2026-01-01T08:02:00Z"}
