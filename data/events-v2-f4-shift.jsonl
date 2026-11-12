@@ -1,0 +1,2 @@
+{"event_id": "shift", "revision": 1, "action": "upsert", "trip_id": "F4", "kind": "departed", "occurred_at": "2026-01-01T10:00:00Z"}
+{"event_id": "shift", "revision": 2, "action": "upsert", "trip_id": "F4", "kind": "departed", "occurred_at": "2026-01-01T12:30:00Z"}

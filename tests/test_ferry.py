@@ -56,10 +56,11 @@ class FerryTests(unittest.TestCase):
     def test_conflicting_identity_rolls_back(self):
         self.ingest()
         self.events.write_text('{"event_id":"new","trip_id":"F4","kind":"departed","occurred_at":"2026-01-01T10:00:00Z"}\n'+self.events.read_text().replace('"08:02', '"08:03').replace('T08:02', 'T08:03'))
-        with self.assertRaisesRegex(ValueError,"conflicting"):
+        with self.assertRaisesRegex(ValueError,"conflict"):
             self.ingest()
         with sqlite3.connect(self.db) as db:
-            self.assertEqual(db.execute("SELECT count(*) FROM events").fetchone()[0],5)
+            self.assertEqual(db.execute("SELECT count(*) FROM event_projection").fetchone()[0],5)
+            self.assertEqual(db.execute("SELECT count(*) FROM revisions").fetchone()[0],5)
             self.assertEqual(db.execute("SELECT count(*) FROM sources").fetchone()[0],1)
 
     def test_unknown_trip(self):

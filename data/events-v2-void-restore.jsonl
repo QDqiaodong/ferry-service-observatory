@@ -1,0 +1,4 @@
+{"action": "void", "event_id": "e1", "revision": 2}
+{"revision": 3, "event_id": "e1", "action": "upsert", "trip_id": "F1", "kind": "departed", "occurred_at": "2026-01-01T08:07:00Z"}
+{"event_id": "e2", "revision": 2, "action": "void"}
+{"event_id": "e2", "revision": 3, "action": "upsert", "trip_id": "F1", "kind": "arrived", "occurred_at": "2026-01-01T08:44:00Z"}
