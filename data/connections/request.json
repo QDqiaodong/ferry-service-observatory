@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "routes": {
+    "East-North": {"origin": "East", "destination": "North", "fare_cents": 300},
+    "Harbor-East": {"origin": "Harbor", "destination": "East", "fare_cents": 500},
+    "Harbor-North": {"origin": "Harbor", "destination": "North", "fare_cents": 900}
+  },
+  "transfer_seconds": {"East": 600, "Harbor": 0, "North": 0},
+  "origin": "Harbor",
+  "destination": "North",
+  "ready_at": "2026-01-01T08:00:00Z"
+}

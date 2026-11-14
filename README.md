@@ -53,6 +53,38 @@ e3 更正后最新知识下准点率为 1、平均延误 180 秒、平均航行 
   `used / superseded / voided / after_cutoff` 状态；trips.csv 保留原六列并追加 `knowledge_seq`。
 - 相同 `(K, T)` 随时可重建字节一致的 JSON 与 CSV；报告不含当前时间、机器路径等易变内容。
 
+## 离线换乘分析
+
+在只读快照上回答“此刻从某港出发能怎样换乘到达”：`--connections` 读入严格 JSON 请求
+（航线→起终港/非负整数分票价的唯一映射、各港换乘秒数、不同起终港与就绪时刻），按既有
+双重截止规则（先 K 内最高修订/撤回，再截 T）只取已到达航次的实开实到，首航开航不早于
+就绪时刻，后续航段满足同港换乘秒数。输出到达时刻、总票价、换乘次数三项指标下全部非支配
+方案，同指标仅留 trip_id 字典序最小者；不可达是正常诊断而非错误。报告原子替换，坏输入或
+写入失败保留旧报告。
+
+```sh
+# 多航线合成网络：Harbor/East/North 三港，直达贵、换乘便宜
+.venv/bin/python -m ferry_observer --schedule data/connections/schedule.csv \
+  --events data/connections/events.jsonl --db run/conn.sqlite --output run/conn-report \
+  --as-of 2026-01-01T12:00:00Z
+.venv/bin/python -m ferry_observer --connections data/connections/request.json \
+  --db run/conn.sqlite --output run/conn --as-of 2026-01-01T12:00:00Z
+
+# 更正 E1 开航到 08:45（换乘恰好临界可行）并撤回 D1 到达后，按知识版本复算
+.venv/bin/python -m ferry_observer --event-format v2 --events data/connections/events-v2-e1-shift.jsonl \
+  --schedule data/connections/schedule.csv --db run/conn.sqlite --output run/conn-report \
+  --as-of 2026-01-01T12:00:00Z
+.venv/bin/python -m ferry_observer --event-format v2 --events data/connections/events-v2-void-d1.jsonl \
+  --schedule data/connections/schedule.csv --db run/conn.sqlite --output run/conn-report \
+  --as-of 2026-01-01T12:00:00Z
+.venv/bin/python -m ferry_observer --connections data/connections/request.json \
+  --db run/conn.sqlite --output run/conn-k1 --as-of 2026-01-01T12:00:00Z --known-at 1
+```
+
+演示网络下前沿恰含两案：直达 D1（09:50 到、900 分、0 换乘）与 H1→E1（10:12 到、800 分、
+1 换乘）——晚到但更便宜的方案不被支配。撤回 D1 到达事件后（知识版本 3）仅剩 H1→E1；
+`--known-at 1` 仍字节一致地重现原前沿。完整契约见 `docs/connections-contract.md`。
+
 ## 旧库升级
 
 旧结构数据库（含 `events` 表）不会被隐式迁移。采集或报告遇到旧库会提示先升级：
@@ -72,8 +104,11 @@ revision=1，旧库无事件则停在版本 0。升级幂等，失败不留部�
 - `ferry_observer/storage.py`：不可变修订账本、知识序号事务、来源哈希与旧库显式升级。
 - `ferry_observer/reconcile.py`：事件生命周期（口径不变）。
 - `ferry_observer/analysis.py`：双重截止、逐班次/路线口径与修订依据。
-- `data/`：刻意乱序、含合法重复的合成 v1 输入与 v2 修订示例；`tests/`：原口径与修订、回放、迁移、并发及真实 CLI 子进程测试。
+- `ferry_observer/connections.py`：离线换乘分析（请求校验、前沿扫描、原子报告替换）。
+- `data/`：刻意乱序、含合法重复的合成 v1 输入与 v2 修订示例；`data/connections/` 多航线换乘演示网络。
+- `tests/`：原口径与修订、回放、迁移、并发、真实 CLI 子进程测试，以及换乘前沿对独立小图穷举的核对。
 - `docs/event-contract.md`：修订身份、批次生效、双重截止、来源归属与升级边界的完整契约。
+- `docs/connections-contract.md`：换乘请求、候选口径、前沿与平局裁决、诊断与原子替换契约。
 
 当前只支持一份固定计划和基于文件的采集；不包含在线消息队列、跨日 service-day 或班次改签。
 数据库与报告均在忽略的 `run/` 中；虚拟环境与源码不共享。代码与自制数据 MIT，无第三方复制。

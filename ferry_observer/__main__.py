@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 
 from .analysis import performance, write_report
+from .connections import connections, load_request, write_connections
 from .contracts import instant
 from .storage import ingest, upgrade_database
 
@@ -26,11 +27,16 @@ def _build_parser():
     )
     parser.add_argument(
         "--known-at", type=int, default=None,
-        help="knowledge sequence cutoff; report-only only, 0..current",
+        help="knowledge sequence cutoff; report-only and connections only, 0..current",
     )
     parser.add_argument(
         "--upgrade-db", action="store_true",
         help="explicitly migrate a legacy database and exit",
+    )
+    parser.add_argument(
+        "--connections", type=Path, default=None, metavar="REQUEST.json",
+        help="offline connection analysis with the given request JSON "
+             "(read-only, mutually exclusive with --report-only)",
     )
     return parser
 
@@ -42,8 +48,9 @@ def main(argv=None):
     acquisition = None
     try:
         if args.upgrade_db:
-            if args.report_only or args.known_at is not None or args.as_of is not None:
-                raise ValueError("--upgrade-db is mutually exclusive with --report-only, --known-at and --as-of")
+            if (args.report_only or args.known_at is not None or args.as_of is not None
+                    or args.connections is not None):
+                raise ValueError("--upgrade-db is mutually exclusive with --report-only, --known-at, --as-of and --connections")
             result = upgrade_database(args.db)
             print(json.dumps(result, sort_keys=True))
             return
@@ -51,6 +58,31 @@ def main(argv=None):
         if args.as_of is None:
             raise ValueError("--as-of is required")
         instant(args.as_of)
+
+        if args.connections is not None:
+            if args.report_only:
+                raise ValueError("--connections is mutually exclusive with --report-only")
+            if args.known_at is not None and not (
+                not isinstance(args.known_at, bool) and args.known_at >= 0
+            ):
+                raise ValueError("--known-at must be an integer >= 0")
+            # Read-only path: the database is never created or upgraded here,
+            # and a bad request or failed write keeps the previous report.
+            request = load_request(args.connections)
+            report = connections(args.db, args.as_of, args.known_at, request)
+            write_connections(report, args.output)
+            print(
+                json.dumps(
+                    {"connections": {
+                        "status": report["diagnostics"]["status"],
+                        "options": len(report["options"]),
+                        "candidate_trips": len(report["candidate_trips"]),
+                        "knowledge_seq": report["knowledge_seq"],
+                    }},
+                    sort_keys=True,
+                )
+            )
+            return
 
         if args.report_only:
             if args.known_at is not None and not (
@@ -70,7 +102,7 @@ def main(argv=None):
             return
 
         if args.known_at is not None:
-            raise ValueError("--known-at is only valid together with --report-only")
+            raise ValueError("--known-at is only valid together with --report-only or --connections")
         # The ledger commits before report writing. If writing the output fails
         # afterwards, the committed data stays valid and is recoverable through
         # --report-only; ingestion itself is not rolled back.

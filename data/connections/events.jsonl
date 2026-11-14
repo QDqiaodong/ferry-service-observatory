@@ -1,0 +1,10 @@
+{"event_id":"h1a","trip_id":"H1","kind":"arrived","occurred_at":"2026-01-01T08:35:00Z"}
+{"event_id":"d1d","trip_id":"D1","kind":"departed","occurred_at":"2026-01-01T08:20:00Z"}
+{"event_id":"h1d","trip_id":"H1","kind":"departed","occurred_at":"2026-01-01T08:05:00Z"}
+{"event_id":"e2a","trip_id":"E2","kind":"arrived","occurred_at":"2026-01-01T11:15:00Z"}
+{"event_id":"e1d","trip_id":"E1","kind":"departed","occurred_at":"2026-01-01T09:40:00Z"}
+{"event_id":"h2a","trip_id":"H2","kind":"arrived","occurred_at":"2026-01-01T09:33:00Z"}
+{"event_id":"d1a","trip_id":"D1","kind":"arrived","occurred_at":"2026-01-01T09:50:00Z"}
+{"event_id":"e2d","trip_id":"E2","kind":"departed","occurred_at":"2026-01-01T10:45:00Z"}
+{"event_id":"h2d","trip_id":"H2","kind":"departed","occurred_at":"2026-01-01T09:02:00Z"}
+{"event_id":"e1a","trip_id":"E1","kind":"arrived","occurred_at":"2026-01-01T10:12:00Z"}
