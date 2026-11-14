@@ -1,0 +1,13 @@
+{"type":"sale","ticket_id":"T-BOOL","paid_cents":true,"legs":[{"trip_id":"F1","weight":1}]}
+{"type":"sale","ticket_id":"T-WBOOL","paid_cents":10,"legs":[{"trip_id":"F1","weight":true}]}
+{"type":"refund","refund_id":"R-BAD","ticket_id":"T-400","cents":0}
+{"type":"refund","refund_id":"R-BOOL","ticket_id":"T-400","cents":true}
+{"type":"sale","ticket_id":"T-DUP","paid_cents":50,"legs":[{"trip_id":"F1","weight":1},{"trip_id":"F1","weight":2}]}
+{"type":"sale","ticket_id":"T-EMPTY","paid_cents":50,"legs":[]}
+{"type":"sale","ticket_id":"T-GHOST","paid_cents":50,"legs":[{"trip_id":"F9","weight":1}]}
+{"type":"sale","ticket_id":"T-NOLEGS","paid_cents":50}
+{"type":"refund","refund_id":"","ticket_id":"T-400","cents":5}
+{"type":"sale","ticket_id":"T-FLOAT","paid_cents":9.5,"legs":[{"trip_id":"F1","weight":1}]}
+{"type":"sale","ticket_id":"T-KEYS","paid_cents":50,"legs":[{"trip_id":"F1","weight":1}],"extra":1}
+{"type":"unknown","ticket_id":"T-X"}
+not-json

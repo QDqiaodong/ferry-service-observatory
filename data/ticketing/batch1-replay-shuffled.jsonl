@@ -1,0 +1,2 @@
+{"type":"sale","ticket_id":"T-200","paid_cents":10,"legs":[{"trip_id":"F3","weight":1},{"trip_id":"F2","weight":1},{"trip_id":"F1","weight":1}]}
+{"type":"sale","ticket_id":"T-100","paid_cents":10,"legs":[{"trip_id":"F3","weight":1},{"trip_id":"F1","weight":1},{"trip_id":"F2","weight":1}]}

@@ -6,6 +6,7 @@ from .analysis import performance, write_report
 from .connections import connections, load_request, write_connections
 from .contracts import instant
 from .storage import ingest, upgrade_database
+from .ticketing import ingest_tickets, settlement, write_settlement
 
 
 def _build_parser():
@@ -38,6 +39,16 @@ def _build_parser():
         help="offline connection analysis with the given request JSON "
              "(read-only, mutually exclusive with --report-only)",
     )
+    parser.add_argument(
+        "--ticket-ingest", type=Path, default=None, metavar="TICKETS.jsonl",
+        help="ingest a strict ticket sale/refund JSONL file and refresh the "
+             "settlement report; mutually exclusive with all event modes",
+    )
+    parser.add_argument(
+        "--settlement", action="store_true",
+        help="re-export the deterministic settlement report from committed "
+             "ticket facts without ingesting (read-only re-export)",
+    )
     return parser
 
 
@@ -49,10 +60,48 @@ def main(argv=None):
     try:
         if args.upgrade_db:
             if (args.report_only or args.known_at is not None or args.as_of is not None
-                    or args.connections is not None):
-                raise ValueError("--upgrade-db is mutually exclusive with --report-only, --known-at, --as-of and --connections")
+                    or args.connections is not None
+                    or args.ticket_ingest is not None or args.settlement):
+                raise ValueError("--upgrade-db is mutually exclusive with --report-only, --known-at, --as-of, --connections, --ticket-ingest and --settlement")
             result = upgrade_database(args.db)
             print(json.dumps(result, sort_keys=True))
+            return
+
+        # Ticket clearing operates on the existing trips schedule and never
+        # touches the event revision ledger. It needs no as-of cutoff.
+        if args.ticket_ingest is not None or args.settlement:
+            if (args.report_only or args.known_at is not None
+                    or args.as_of is not None or args.connections is not None):
+                raise ValueError(
+                    "ticket modes are mutually exclusive with --report-only, "
+                    "--known-at, --as-of and --connections"
+                )
+            if args.ticket_ingest is not None and args.settlement:
+                raise ValueError(
+                    "--ticket-ingest and --settlement are mutually exclusive"
+                )
+            if args.ticket_ingest is not None:
+                # The ledger commits before report writing. A failed write keeps
+                # the committed facts intact and the old settlement file in
+                # place; --settlement re-exports from the committed database.
+                result = ingest_tickets(args.ticket_ingest, args.db)
+                report = settlement(args.db)
+                write_settlement(report, args.output)
+                print(json.dumps(
+                    {"ticket_ingestion": result,
+                     "tickets": len(report["tickets"]),
+                     "pending_refunds": len(report["pending_refunds"])},
+                    sort_keys=True,
+                ))
+            else:
+                report = settlement(args.db)
+                write_settlement(report, args.output)
+                print(json.dumps(
+                    {"settlement": True, "ingest_seq": report["ingest_seq"],
+                     "tickets": len(report["tickets"]),
+                     "pending_refunds": len(report["pending_refunds"])},
+                    sort_keys=True,
+                ))
             return
 
         if args.as_of is None:

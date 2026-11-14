@@ -85,6 +85,41 @@ e3 更正后最新知识下准点率为 1、平均延误 180 秒、平均航行 
 1 换乘）——晚到但更便宜的方案不被支配。撤回 D1 到达事件后（知识版本 3）仅剩 H1→E1；
 `--known-at 1` 仍字节一致地重现原前沿。完整契约见 `docs/connections-contract.md`。
 
+## 客票清分入库与重导
+
+客票路径复用既有不可变 `trips` 班次表，不触碰事件修订账本。`--ticket-ingest` 接收严格
+JSONL：售票为 `type=sale`（`ticket_id, paid_cents, legs[{trip_id, weight}]`），退款为
+`type=refund`（`refund_id, ticket_id, cents`）。ID 非空；金额为整数分（售票 ≥0、退款 >0，
+布尔与浮点一律拒绝）；权重为正整数；航段非空、不重复且班次必须存在。售票/退款 ID 各自
+独立唯一，航段顺序无关（规范化按 trip_id 排序）；同 ID 同内容幂等、异内容拒绝整批。
+
+票款按权重以最大余数法（Hamilton）整数分摊，余数并列按 `trip_id` 字典序；累计退款以**原
+分摊金额**为权重新做一次最大余数分摊，每航段净额为两者整数之差，全程无浮点。退款可先于
+售票到达（列为 `pending_refunds`），同批先合并再校验，累计退款永远不超过票款。票据、航段、
+退款、分摊事实与来源 SHA256 在同一个 `BEGIN IMMEDIATE` 事务提交，失败整批回滚、不占序号。
+
+```sh
+# 先有班次表（事件采集或空事件文件均可），再逐批入库客票
+.venv/bin/python -m ferry_observer --schedule data/schedule.csv --events data/events.jsonl \
+  --db run/ferry.sqlite --output run/report --as-of 2026-01-01T12:00:00Z
+.venv/bin/python -m ferry_observer --ticket-ingest data/ticketing/batch1-sales.jsonl \
+  --db run/ferry.sqlite --output run/settle
+# 退款先行与同批合并、跨批部分退款、乱序幂等重放
+.venv/bin/python -m ferry_observer --ticket-ingest data/ticketing/batch2-early-refunds.jsonl \
+  --db run/ferry.sqlite --output run/settle
+.venv/bin/python -m ferry_observer --ticket-ingest data/ticketing/batch3-partial-refunds.jsonl \
+  --db run/ferry.sqlite --output run/settle
+.venv/bin/python -m ferry_observer --ticket-ingest data/ticketing/batch1-replay-shuffled.jsonl \
+  --db run/ferry.sqlite --output run/settle
+# 提交后只读重导：字节一致；写入失败保留旧 settlement.json
+.venv/bin/python -m ferry_observer --settlement --db run/ferry.sqlite --output run/settle-re
+```
+
+10 分等权三段票款分为 4/3/3（余数并列，多余 1 分归字典序最小的 F1）；累计退 3 分按原
+4/3/3 权重各退 1 分，净额 3/2/2。`settlement.json` 逐票给出票款与退款两套分摊依据
+（floor、余数字、`extra_unit`）及逐班次收入/退款/净额汇总。完整契约见
+`docs/ticketing-contract.md`。
+
 ## 旧库升级
 
 旧结构数据库（含 `events` 表）不会被隐式迁移。采集或报告遇到旧库会提示先升级：
@@ -121,10 +156,14 @@ python3 -m unittest tests.test_quality_gate tests.test_quality_mutations -v
 - `ferry_observer/reconcile.py`：事件生命周期（口径不变）。
 - `ferry_observer/analysis.py`：双重截止、逐班次/路线口径与修订依据。
 - `ferry_observer/connections.py`：离线换乘分析（请求校验、前沿扫描、原子报告替换）。
-- `data/`：刻意乱序、含合法重复的合成 v1 输入与 v2 修订示例；`data/connections/` 多航线换乘演示网络。
-- `tests/`：原口径与修订、回放、迁移、并发、真实 CLI 子进程测试，以及换乘前沿对独立小图穷举的核对。
+- `ferry_observer/ticketing.py`：客票售票/退款严格 JSONL 入库、整数最大余数分摊、清分报告与原子重导。
+- `data/`：刻意乱序、含合法重复的合成 v1 输入与 v2 修订示例；`data/connections/` 多航线换乘演示网络；
+  `data/ticketing/` 客票批次、乱序重放、冲突与各类坏记录样例。
+- `tests/`：原口径与修订、回放、迁移、并发、真实 CLI 子进程测试，换乘前沿对独立小图穷举的核对，
+  以及客票清分的分摊算法、跨批退款、乱序冲突、回滚与 CLI 贯通测试。
 - `docs/event-contract.md`：修订身份、批次生效、双重截止、来源归属与升级边界的完整契约。
 - `docs/connections-contract.md`：换乘请求、候选口径、前沿与平局裁决、诊断与原子替换契约。
+- `docs/ticketing-contract.md`：客票 JSONL、最大余数分摊、累计退款口径、事务存储与确定性清分导出契约。
 
 当前只支持一份固定计划和基于文件的采集；不包含在线消息队列、跨日 service-day 或班次改签。
 数据库与报告均在忽略的 `run/` 中；虚拟环境与源码不共享。代码与自制数据 MIT，无第三方复制。

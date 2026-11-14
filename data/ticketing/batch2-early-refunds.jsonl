@@ -1,0 +1,3 @@
+{"type":"refund","refund_id":"R-100","ticket_id":"T-100","cents":1}
+{"type":"refund","refund_id":"R-300-early","ticket_id":"T-300","cents":10}
+{"type":"sale","ticket_id":"T-300","paid_cents":30,"legs":[{"trip_id":"F1","weight":1},{"trip_id":"F2","weight":1},{"trip_id":"F3","weight":1}]}
