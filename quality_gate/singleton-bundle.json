@@ -1,0 +1,97 @@
+{
+  "batches": [
+    {
+      "expected": "accept",
+      "label": "01_initial_shuffled_with_duplicate",
+      "note": "revision-1 upserts, file order scrambled, one exact duplicate",
+      "payload": "{\"event_id\": \"ev-g1-0\", \"trip_id\": \"G1\", \"kind\": \"departed\", \"action\": \"upsert\", \"revision\": 1, \"occurred_at\": \"2026-01-01T09:02:00+01:00\"}\n{\"action\": \"upsert\", \"trip_id\": \"G1\", \"revision\": 1, \"kind\": \"arrived\", \"occurred_at\": \"2026-01-01T08:40:00Z\", \"event_id\": \"ev-g1-1\"}\n{\"event_id\": \"ev-g2-0\", \"revision\": 1, \"action\": \"upsert\", \"trip_id\": \"G2\", \"kind\": \"departed\", \"occurred_at\": \"2026-01-01T08:02:00Z\"}\n{\"event_id\": \"ev-g2-1\", \"revision\": 1, \"action\": \"upsert\", \"trip_id\": \"G2\", \"kind\": \"arrived\", \"occurred_at\": \"2026-01-01T08:40:00Z\"}\n{\"event_id\": \"ev-g3-0\", \"revision\": 1, \"action\": \"upsert\", \"trip_id\": \"G3\", \"kind\": \"cancelled\", \"occurred_at\": \"2026-01-01T09:45:00Z\"}\n{\"revision\": 1, \"event_id\": \"ev-g6-1\", \"trip_id\": \"G6\", \"kind\": \"arrived\", \"occurred_at\": \"2026-01-01T11:40:00+01:00\", \"action\": \"upsert\"}\n{\"event_id\": \"ev-g7-0\", \"revision\": 1, \"action\": \"upsert\", \"trip_id\": \"G7\", \"kind\": \"departed\", \"occurred_at\": \"2026-01-01T11:00:00Z\"}\n{\"event_id\": \"ev-g6-0\", \"revision\": 1, \"action\": \"upsert\", \"trip_id\": \"G6\", \"kind\": \"departed\", \"occurred_at\": \"2026-01-01T10:02:00Z\"}\n{\"event_id\": \"ev-g1-0\", \"revision\": 1, \"action\": \"upsert\", \"trip_id\": \"G1\", \"kind\": \"departed\", \"occurred_at\": \"2026-01-01T08:02:00Z\"}\n{\"event_id\": \"ev-g5-0\", \"occurred_at\": \"2026-01-01T10:00:00Z\", \"trip_id\": \"G5\", \"revision\": 1, \"kind\": \"departed\", \"action\": \"upsert\"}\n{\"event_id\": \"ev-g4-0\", \"revision\": 1, \"action\": \"upsert\", \"trip_id\": \"G4\", \"kind\": \"departed\", \"occurred_at\": \"2026-01-01T09:00:00Z\"}\n{\"event_id\": \"ev-g8-0\", \"revision\": 1, \"action\": \"upsert\", \"trip_id\": \"G8\", \"kind\": \"departed\", \"occurred_at\": \"2026-01-01T13:00:00Z\"}\n"
+    },
+    {
+      "expected": "accept",
+      "label": "02_correction_move_pair_together",
+      "note": "departure and arrival corrected together, lifecycle still valid",
+      "payload": "{\"event_id\": \"ev-g1-1\", \"revision\": 2, \"action\": \"upsert\", \"trip_id\": \"G1\", \"kind\": \"arrived\", \"occurred_at\": \"2026-01-01T08:42:00Z\"}\n{\"event_id\": \"ev-g1-0\", \"revision\": 2, \"action\": \"upsert\", \"trip_id\": \"G1\", \"kind\": \"departed\", \"occurred_at\": \"2026-01-01T08:05:00Z\"}\n"
+    },
+    {
+      "expected": "accept",
+      "label": "03_out_of_order_consecutive_revisions",
+      "note": "consecutive revisions presented in reverse order in one batch",
+      "payload": "{\"event_id\": \"ev-g4-0\", \"revision\": 3, \"action\": \"upsert\", \"trip_id\": \"G4\", \"kind\": \"departed\", \"occurred_at\": \"2026-01-01T09:02:00Z\"}\n{\"event_id\": \"ev-g4-0\", \"revision\": 2, \"action\": \"upsert\", \"trip_id\": \"G4\", \"kind\": \"departed\", \"occurred_at\": \"2026-01-01T09:01:00Z\"}\n"
+    },
+    {
+      "expected": "accept",
+      "label": "04_legacy_old_revision_replay",
+      "note": "superseded revision 1 replayed with offset and key-order variants",
+      "payload": "{\"event_id\": \"ev-g4-0\", \"revision\": 1, \"action\": \"upsert\", \"trip_id\": \"G4\", \"kind\": \"departed\", \"occurred_at\": \"2026-01-01T09:00:00Z\"}\n{\"event_id\": \"ev-g4-0\", \"revision\": 1, \"action\": \"upsert\", \"trip_id\": \"G4\", \"kind\": \"departed\", \"occurred_at\": \"2026-01-01T10:00:00+01:00\"}\n{\"event_id\": \"ev-g4-0\", \"revision\": 1, \"action\": \"upsert\", \"trip_id\": \"G4\", \"kind\": \"departed\", \"occurred_at\": \"2026-01-01T09:00:00Z\"}\n"
+    },
+    {
+      "expected": "accept",
+      "label": "05_fully_duplicate_file",
+      "note": "duplicate-only input registers a source but consumes no sequence",
+      "payload": "{\"event_id\": \"ev-g2-0\", \"revision\": 1, \"action\": \"upsert\", \"trip_id\": \"G2\", \"kind\": \"departed\", \"occurred_at\": \"2026-01-01T08:02:00Z\"}\n"
+    },
+    {
+      "expected": "accept",
+      "label": "06_void_whole_trip",
+      "note": "voiding every event of trip G2 leaves it pending",
+      "payload": "{\"event_id\": \"ev-g2-1\", \"revision\": 2, \"action\": \"void\"}\n{\"event_id\": \"ev-g2-0\", \"revision\": 2, \"action\": \"void\"}\n"
+    },
+    {
+      "expected": "accept",
+      "label": "07_restore_after_void",
+      "note": "consecutive upsert revisions restore the voided trip",
+      "payload": "{\"revision\": 3, \"event_id\": \"ev-g2-0\", \"kind\": \"departed\", \"trip_id\": \"G2\", \"action\": \"upsert\", \"occurred_at\": \"2026-01-01T09:07:00+01:00\"}\n{\"event_id\": \"ev-g2-1\", \"revision\": 3, \"action\": \"upsert\", \"trip_id\": \"G2\", \"kind\": \"arrived\", \"occurred_at\": \"2026-01-01T08:44:00Z\"}\n"
+    },
+    {
+      "expected": "accept",
+      "label": "08_empty_file",
+      "note": "empty file registers its source without a knowledge sequence",
+      "payload": ""
+    },
+    {
+      "expected": "reject",
+      "label": "09_reject_void_departure_keep_arrival",
+      "note": "final merged state has an arrival without a departure",
+      "payload": "{\"event_id\": \"ev-g6-0\", \"revision\": 2, \"action\": \"void\"}\n"
+    },
+    {
+      "expected": "reject",
+      "label": "10_reject_unknown_event_void",
+      "note": "voiding an event that was never upserted",
+      "payload": "{\"event_id\": \"ev-ghost\", \"revision\": 1, \"action\": \"void\"}\n"
+    },
+    {
+      "expected": "reject",
+      "label": "11_reject_in_batch_conflict",
+      "note": "two different payloads for one revision identity in a batch",
+      "payload": "{\"event_id\": \"ev-g3-0\", \"revision\": 2, \"action\": \"upsert\", \"trip_id\": \"G3\", \"kind\": \"cancelled\", \"occurred_at\": \"2026-01-01T09:46:00Z\"}\n{\"event_id\": \"ev-g3-0\", \"revision\": 2, \"action\": \"upsert\", \"trip_id\": \"G3\", \"kind\": \"cancelled\", \"occurred_at\": \"2026-01-01T09:47:00Z\"}\n"
+    },
+    {
+      "expected": "reject",
+      "label": "12_reject_ledger_conflict",
+      "note": "accepted revision identity re-delivered with another payload",
+      "payload": "{\"event_id\": \"ev-g3-0\", \"revision\": 1, \"action\": \"upsert\", \"trip_id\": \"G3\", \"kind\": \"cancelled\", \"occurred_at\": \"2026-01-01T09:52:00Z\"}\n"
+    },
+    {
+      "expected": "accept",
+      "label": "13_correction_after_reporting_cutoff",
+      "note": "winner moves beyond T; old value must not be resurrected",
+      "payload": "{\"revision\": 2, \"action\": \"upsert\", \"occurred_at\": \"2026-01-01T12:30:00Z\", \"trip_id\": \"G5\", \"event_id\": \"ev-g5-0\", \"kind\": \"departed\"}\n"
+    },
+    {
+      "expected": "accept",
+      "label": "14_correction_back_before_cutoff",
+      "note": "another consecutive revision moves the event before T again",
+      "payload": "{\"event_id\": \"ev-g5-0\", \"revision\": 3, \"action\": \"upsert\", \"trip_id\": \"G5\", \"kind\": \"departed\", \"occurred_at\": \"2026-01-01T09:58:00Z\"}\n"
+    },
+    {
+      "expected": "accept",
+      "label": "15_final_duplicate_replay",
+      "note": "mixed old-revision replay after many later revisions",
+      "payload": "{\"event_id\": \"ev-g1-0\", \"revision\": 1, \"action\": \"upsert\", \"trip_id\": \"G1\", \"kind\": \"departed\", \"occurred_at\": \"2026-01-01T08:02:00Z\"}\n{\"event_id\": \"ev-g5-0\", \"revision\": 1, \"action\": \"upsert\", \"trip_id\": \"G5\", \"kind\": \"departed\", \"occurred_at\": \"2026-01-01T10:00:00Z\"}\n"
+    }
+  ],
+  "schedule_csv": "trip_id,route,planned_departure,planned_arrival\nG1,Harbor-North,2026-01-01T08:00:00Z,2026-01-01T08:35:00Z\nG2,Harbor-North,2026-01-01T08:30:00Z,2026-01-01T09:05:00Z\nG3,Harbor-North,2026-01-01T09:00:00Z,2026-01-01T09:35:00Z\nG4,Harbor-North,2026-01-01T09:30:00Z,2026-01-01T10:05:00Z\nG5,Harbor-East,2026-01-01T10:00:00Z,2026-01-01T10:35:00Z\nG6,Harbor-East,2026-01-01T10:30:00Z,2026-01-01T11:05:00Z\nG7,Harbor-East,2026-01-01T11:00:00Z,2026-01-01T11:35:00Z\nG8,Harbor-East,2026-01-01T13:00:00Z,2026-01-01T13:35:00Z\n",
+  "schema": "ferry-qg-history/1",
+  "seed": 20260101
+}

@@ -98,6 +98,22 @@ revision=1，旧库无事件则停在版本 0。升级幂等，失败不留部�
 入库次序，迁移修订的 `source_sha256` 为空并带 `legacy_unattributed` 说明；只有新代码接收的修订才有
 首次来源关联。
 
+## 修订状态机质量门禁
+
+`quality_gate/` 提供可复现的离线质量门禁：独立内存预言机（不导入生产解析、投影或
+生命周期代码）按 `docs/event-contract.md` 重写账本与双重截止口径，对 40 条固定种子、
+每条 15 批的交错历史（更正、撤回恢复、旧版重复、同批乱序/冲突、账本冲突、空与全重复
+文件）逐批核对决策、知识序号、首次来源、SQLite 全表内容与报告字节稳定性，并带三个
+AST 隔离变异的杀死检查。生产代码与业务契约不做任何改动。
+
+```sh
+python3 -m quality_gate.run_gate --seeds 40 --out run/quality-gate
+python3 -m quality_gate.replay --bundle quality_gate/singleton-bundle.json
+python3 -m unittest tests.test_quality_gate tests.test_quality_mutations -v
+```
+
+完整设计、失败工件与变异说明见 `docs/quality-gate.md`。
+
 ## 目录与边界
 
 - `ferry_observer/contracts.py`：计划、v1 事件与 v2 修订格式、时区与规范载荷契约。
